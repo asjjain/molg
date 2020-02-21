@@ -1,4 +1,22 @@
 ********************************************************************************
+style.css
+********************************************************************************
+/* @import "~bootstrap/dist/css/bootstrap.min.css"; 
+@import "~font-awesome/css/font-awesome.min.css";
+@import "~ag-grid-community/dist/styles/ag-grid.css";
+@import "~ag-grid-community/dist/styles/ag-theme-balham.css"; */
+
+.ag-theme-balham .ag-header {
+    color: black!important;
+}
+
+.ag-theme-balham .ag-paging-panel{
+    color:black!important;
+}
+
+
+
+********************************************************************************
 app.component.html
 ********************************************************************************
 <!--The content below is only a placeholder and can be replaced.-->
@@ -17,3 +35,1204 @@ app.component.html
   </div>
   </div>
 </div>
+********************************************************************************
+header-tab.component.html
+********************************************************************************
+<div>
+  <div class="row col-lg-12" style="background-color: #0e4285;height:63px;width: 100%">
+  <div class="col-lg-1" style="margin-top:5px;">
+    <img src="./assets/logo.png" />
+  </div>
+  <div class="col-lg-4">
+    <div class="col-lg-2" style="color: rgb(253, 251, 251);margin-top:17px;margin-left:-75px;">
+      <b>MiddleOffice</b>
+    </div>
+    <ul style="display:inline-flex">
+    <li class="nav-item" *ngFor="let link of links" style="margin-top:10px;margin-left:20px;">
+    <div class="dropdown">
+      <button class="btn btn-primary dropdown-toggle" type="button" 
+      style="font-size: 15px;background-color: #0e4285;  
+      cursor:pointer;color: rgb(253, 251, 251); text-decoration: none;margin-left:20px;"data-toggle="dropdown">
+      {{link.text}}
+      <span class="caret"></span></button>
+      <ul class="dropdown-menu" *ngIf="userGroups.CloudMargin && link.text == 'Cloud Margin'">
+        <li><a routerLink="collateralManagement">Collateral Management </a></li>
+        <li><a routerLink="cmswiftoutgoing">CM Outgoing Swift Messages</a></li>
+      </ul>
+
+      <ul class="dropdown-menu" *ngIf="userGroups.CorporateAction && link.text == 'XSP'">
+        <li><a routerLink="corporateAction">XSP Outgoing Swift Messages</a></li>
+        <li><a routerLink="recipientConfiguration">XSP Notification</a></li>
+      </ul>
+
+    </div>
+    </li>
+  </ul>
+
+  </div>
+  <div class="col-lg-4">
+      <span style="color:white;margin-left:628px;"><b>{{userDetails}}</b></span>
+      <button type="button" class="btn btn-primary btn-sm"
+       style="margin-left:620px;color:white;background-color:#337ab7" (click)="logOut()">
+       <span class="glyphicon glyphicon-log-out"></span> Log out
+      </button>
+  </div>
+  
+</div>
+</div>
+
+********************************************************************************
+header-tab.component.ts
+********************************************************************************
+
+import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
+import { NavbarService } from 'src/app/shared/navbar.service';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-header-tab',
+  templateUrl: './header-tab.component.html',
+  styleUrls: ['./header-tab.component.css']
+})
+export class HeaderTabComponent implements OnInit {
+
+  userDetails:String;
+  private userGroups;
+  private defaultPath:string;
+  links: Array<{ text: string, path: string }>;
+
+  constructor(private router: Router,
+              private accountService:AccountTableService,
+              private navbarService: NavbarService) {
+                this.accountService.getUserGroups
+                ("/MOLandingZoneGateway/api/user/groups")
+                .subscribe(userGroups =>
+                  {this.userGroups = userGroups
+                    if(this.userGroups == null)
+                    {
+                      this.accountService.showError('Unexpected Error Occured!');
+                    }
+                    else{
+                      console.log("this.userGroups",this.userGroups);
+                      this.navbarService.updateNavAfterAuth(this.userGroups);
+                      this.links = this.navbarService.getLinks();
+                      console.log("this.links",this.links)
+                    }
+                  });
+            
+                
+         
+                this.accountService.getUserDetails
+                ("/MOLandingZoneGateway/api/user/details")
+                .subscribe(userDetails =>
+                  {
+                    this.userDetails=userDetails;
+                    if(this.userDetails == null)
+                    {
+                       this.accountService.showError('Unable to retrieve the user Details');
+                    }
+                    else{
+                      console.log("userDetails:",userDetails);
+                      sessionStorage.setItem("userDetails",userDetails);
+                    }
+                   
+                  });       
+      }
+
+  ngOnInit() {
+
+
+    
+  }
+
+  logOut() {
+    this.accountService.logOut("/MOLandingZoneGateway/api/user/logout")
+      .subscribe(
+        (data) => {
+
+
+
+        },
+        (error) => {
+        },
+        () => {
+          location.reload();
+        }
+      );
+  }
+
+}
+********************************************************************************
+navbar.service.ts
+********************************************************************************
+import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
+import { CorporateActionComponent } from 'src/app/corporate-action/corporate-action.component';
+import { AccountTableComponent } from 'src/app/account-table/account-table.component';
+import { PageNotFoundComponent } from 'src/app/page-not-found/page-not-found.component';
+import { userGroup } from 'src/assets/userGroup';
+import { CloudmarginSwiftMessageComponent } from 'src/app/cloudmargin-swift-message/cloudmargin-swift-message.component';
+import { RecipientDataComponent } from 'src/app/recipient-data/recipient-data.component';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class NavbarService {
+
+  private links = new Array<{ text: string, path: string }>();
+  private isCollateralManagement:boolean;
+  private isCorporateAction:boolean;
+  
+  constructor(private router:Router) {
+    
+   }
+
+  getLinks() {
+    return this.links;
+  }
+
+
+
+  updateNavAfterAuth(userGroups :userGroup): void {
+   // this.removeItem({ text: 'Login' });
+  //  const userGroupsStr  =JSON.stringify(userGroups);
+  //  console.log(userGroups)
+  //  console.log("userGroupsStr",userGroupsStr)
+
+  //  console.log(userGroups["CloudMargin"])
+  //  console.log("second",userGroups.CloudMargin)
+
+   if(userGroups.CloudMargin && userGroups.CorporateAction )
+   {
+    this.addItem({ text: 'Cloud Margin', path: 'collateralManagement' });
+    this.addItem({ text: 'XSP', path: 'corporateAction' });
+    this.router.config.unshift(
+      { path: 'collateralManagement', component: AccountTableComponent },
+      { path: 'corporateAction', component: CorporateActionComponent },
+      { path: 'cmswiftoutgoing', component: CloudmarginSwiftMessageComponent },
+      { path: 'recipientConfiguration', component: RecipientDataComponent },
+      { path: '**', component: AccountTableComponent }
+      );
+      this.router.navigate(['collateralManagement']);
+ 
+    }
+   else if(userGroups.CloudMargin )
+    {
+     console.log('CloudMargin Called');
+     this.addItem({ text: 'Cloud Margin', path: 'collateralManagement' });
+     this.router.config.unshift(
+       { path: 'collateralManagement', component: AccountTableComponent },
+	   { path: 'cmswiftoutgoing', component: CloudmarginSwiftMessageComponent },
+       { path: '**', component: AccountTableComponent }
+       );
+   
+     this.router.navigate(['/collateralManagement']);
+    }
+       else
+         if (userGroups.CorporateAction){
+           console.log('CorporateAction Called');
+           this.addItem({ text: 'XSP', path: 'corporateAction' });
+             this.router.config.unshift(
+               { path: 'corporateAction', component: CorporateActionComponent },
+               { path: 'recipientConfiguration', component: RecipientDataComponent },
+               { path: '**', component: CorporateActionComponent }
+               );
+             this.router.navigate(['/corporateAction']);
+           
+         }
+        
+    else
+    {
+     this.router.config.unshift(
+      { path: 'pageNotFound', component: PageNotFoundComponent },
+      { path: '**', component: PageNotFoundComponent }
+      );
+       this.router.navigate(['/pageNotFound']);
+    }
+   
+  
+  }
+
+  addItem({ text, path }) {
+    this.links.push({ text: text, path: path });
+  }
+
+  removeItem({ text }) {
+    this.links.forEach((link, index) => {
+      if (link.text === text) {
+        this.links.splice(index, 1);
+      }
+    });
+  }
+}
+
+********************************************************************************
+account-table.service.ts
+********************************************************************************
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import {Observable} from 'rxjs';
+import { ToastrManager } from 'ng6-toastr-notifications';
+import { Subject } from 'rxjs/internal/Subject';
+
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AccountTableService {
+reloadGrid$=new Subject<any>();
+loadModal=new Subject();
+loadSwiftModal=new Subject();
+reloadMessageDetails$ =new Subject<any>();
+loadCMSwiftModal=new Subject();
+reloadCMMessageDetails$ =new Subject<any>();
+reloadEmailFaxGrid$=new Subject<any>();
+loadEmailFaxModal=new Subject();
+  constructor(private http: HttpClient,public toastr: ToastrManager) {
+    
+  }
+
+  showSuccess(message) {
+    this.toastr.successToastr(message, 'Success!');
+}
+
+showError(message) {
+    this.toastr.errorToastr(message, 'Oops!');
+}
+
+showWarning(message) {
+    this.toastr.warningToastr(message, 'Alert!');
+}
+
+
+  public getMonitoringDetails(getMonitoringDetailsUrl: string): any {
+    console.log("service method called");
+    console.log("getMonitoringDetailsUrl",getMonitoringDetailsUrl);
+    return this.http.get(getMonitoringDetailsUrl);
+  }
+
+  public createNewCMAccountRegion(createNewCMAccountRegionUrl: string, input: string): any {
+    console.log("createNewCMAccountRegion service method called");
+    return this.http.post(createNewCMAccountRegionUrl, input);
+  }
+
+  public validateCMAccountRegion(validateCMAccountRegionUrl: string, input: string): any {
+    console.log("validateCMAccountRegion service method called");
+    return this.http.put(validateCMAccountRegionUrl, input);
+  }
+
+  public getUserDetails(getUserDetailsUrl: string): any {
+    console.log("getUserDetails service method called");
+    return this.http.get(getUserDetailsUrl,{responseType: "text"});
+  }
+
+  public getUserGroups(getUserDetailsUrl: string): any {
+    console.log("getUserDetails service method called");
+    return this.http.get(getUserDetailsUrl);
+  }
+
+  public logOut(getLogOutUrl :string){ 
+     return this.http.get(getLogOutUrl);
+ }
+
+}
+
+********************************************************************************
+account-table.component.html
+********************************************************************************
+<div class="row" style="
+margin-right: 25px;
+margin-left: 25px;
+"
+>
+
+<div class="panel panel-default">
+ 
+        <div class="panel-heading" style="text-align:left; font-size:15px; height: auto;">Collateral Management
+
+            </div>
+            <div  class="panel-body" style="width:100%">
+                    <div  style="height:132px">
+                            <form class="form-group" #form="ngForm" (ngSubmit)="createNewCMAccountRegion(form)">
+                                <div class="row col-lg-12">                            
+                                    <div class="col-lg-3" style="text-align: left;margin-left: -15px">
+                                        <label for="Account Number">
+                                            <strong>Account Number:</strong>
+                                        </label>
+                                        <input type="text" class="form-control" required maxlength="35" name="accountNumber" #accountValid="ngModel" placeholder="Enter Account Number"
+                                            [(ngModel)]="accountNumber" />
+                                        <div *ngIf="accountNotValid
+                                        " class="alert alert-danger">
+                                            
+                                                Account Number is required.
+                                                                 </div>    
+                                    </div>
+                    
+                                    <div class="col-lg-3" style="text-align: left">
+                                        <label for="Region">
+                                            <strong>Region:</strong>
+                                        </label>
+                                        <select class="custom-select"  class="form-control" required=true [(ngModel)]="region" name="region" #regionValid="ngModel">
+                                            <option disabled selected value="">Select Region</option>
+                                            <option value="A">Asia</option>
+                                            <option value="E">Europe</option>
+                                            <option value="C">Canada</option>
+                                            </select>
+                    
+                                            <div *ngIf="regionNotValid
+                                            " class="alert alert-danger">
+                                                    Region is required.
+                                    
+                                            </div>
+                                    </div>
+                                    <div class="col-lg-3" style="text-align: left">
+                                        <label for="Comments">
+                                            <strong>Comments:</strong>
+                                        </label>
+                                        <input type="text" class="form-control" name="comments" placeholder="Add Comments" [(ngModel)]="comments">
+                                    </div>
+                    
+                                    <div class="col-lg-1">
+                                            <button  class="btn btn-primary" style="margin-top:25px;width:200px;">Create</button>
+                                           
+                                        </div>
+                    
+                    
+                    
+                                </div>
+                                
+                                    
+                            </form>
+                                 
+                               
+                    
+                            
+                        </div>
+            </div>
+           
+    </div> 
+    <div class="form-group">
+        <input type="text" [(ngModel)]="searchText" class="form-control pull-right" 
+        style="width:200px;margin-right:10px;margin-bottom:10px;"
+         placeholder="Search Account Number" (input)="onFilterTextBoxChanged()"/>
+        
+                    </div>
+</div>
+
+<modal #myModal>
+    <modal-header>
+        Reason for Validation/Deactivation
+    </modal-header>
+ 
+    <modal-content>
+      <input type="text"  [(ngModel)]="updatedComments" required  maxlength="200" 
+       class ="form-control" name="updatedComments" #commentsValid="ngModel" id="updatedComments">
+       <div *ngIf="isCommentsValid" class="alert alert-danger">
+       Please enter the comments.
+       </div>
+
+    </modal-content>
+ 
+    <modal-footer>
+        <button class="btn btn-primary"  (click)="closeModal(commentsValid)">Add</button>
+    </modal-footer>
+</modal>
+
+<div class="row" style="
+margin-left: 25px;
+margin-right: 25px;
+"
+>
+<ag-grid-angular style="height: 365px;width: 100%" 
+class="ag-theme-balham" 
+[rowData]="accounts" 
+[columnDefs]="accountTableColumnDefs"
+[enableSorting]="true" 
+[paginationAutoPageSize]="true"
+[pagination]="true"
+[icons]="icons"
+[enableServerSideSorting]="false"
+(gridReady)="onGridReady($event)">
+</ag-grid-angular>
+</div>
+
+********************************************************************************
+account-table.component.ts
+********************************************************************************
+
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ModalManager } from 'ngb-modal';
+import { Subscription } from 'rxjs/internal/Subscription';
+import { RowOperationComponent } from 'src/app/row-operation/row-operation.component';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-account-table',
+  templateUrl: './account-table.component.html',
+  styleUrls: ['./account-table.component.css']
+})
+export class AccountTableComponent implements OnInit,OnDestroy {
+  reloadGrid:Subscription;
+  accounts: any;
+  private gridApi;
+  private gridColumnApi;
+  accountNumber: string;
+  region: string;
+  comments: string;
+  private createNewCMAccountRegionObj: any;
+  accountTableColumnDefs: any[];
+  private userName: String ;
+  private validatedBy;
+  accountNotValid:boolean=false;
+  regionNotValid:boolean=false;
+  searchText:String;
+  icons;
+  private data;
+  updatedComments;
+  isCommentsValid:boolean =false;
+  // filter: "agTextColumnFilter"
+  constructor(private accountTableService: AccountTableService,private modalService: ModalManager) {
+
+
+    this.
+      accountTableColumnDefs = [
+        {headerName: 'Operations',cellRendererFramework:RowOperationComponent,width:100},
+        {headerName: 'Account Number', field: 'accountNumber',width:100},
+        {headerName: 'Region', field: 'region',width:100},
+        {headerName: 'Status', field: 'status',width:100},
+        {headerName: 'Created By', field: 'createdBy' ,width:100},
+        {headerName: 'Creation Date', field: 'creationDate',comparator: dateComparator ,width:100},
+        {headerName: 'Validated By', field: 'validatedBy',width:100},
+        {headerName: 'Validation Date', field: 'validationDate',comparator: dateComparator,width:100},
+        {headerName: 'Comments', field: 'comments',width:100}
+      ];
+
+      function dateComparator(date1, date2) {
+        var date1Number = monthToComparableNumber(new Date(date1).toLocaleDateString('en-GB'));
+        var date2Number = monthToComparableNumber(new Date(date2).toLocaleDateString('en-GB'));
+        
+        if (date1Number === null && date2Number === null) {
+          return 0;
+        }
+        if (date1Number === null) {
+          return -1;
+        }
+        if (date2Number === null) {
+          return 1;
+        }
+        return date1Number - date2Number;
+      }
+      function monthToComparableNumber(date) {
+        if (date === undefined || date === null || date.length !== 15) {
+          return null;
+        }
+        var yearNumber:number = date.substring(11, 15);
+        var monthNumber:number = date.substring(6, 8);
+        var dayNumber:number = date.substring(1, 3);
+        var result = (yearNumber * 10000) + (monthNumber * 100) + (dayNumber * 1);
+        return result;
+      }
+
+      this.icons = {
+        filter: ' '
+      }
+
+
+  }
+
+
+
+  @ViewChild('myModal') myModal;
+  private modalRef;
+ 
+
+
+
+  ngOnInit(): void {
+    console.log("ngOnInit Called");
+    this.accountTableService.getMonitoringDetails
+    ("/MOLandingZoneGateway/api/cloudMargin/accounts")
+      .subscribe(accounts => 
+       { this.accounts = accounts;
+        if(this.accounts ==null)
+        {
+          this.accountTableService.showError('Unable to retrieve the account details');
+        }
+       });
+  
+  this.reloadGrid=this.accountTableService.reloadGrid$.subscribe(data=>{
+    this.accounts=data;
+  });
+
+this.accountTableService.loadModal.subscribe(data=>{
+  this.data=data;
+  this.openModal();
+  
+})
+
+
+    }
+
+
+  openModal(){
+    
+      this.modalRef = this.modalService.open(this.myModal, {
+          size: "md",
+          modalClass: 'mymodal',
+          hideCloseButton: false,
+          centered: false,
+          backdrop: false,
+          animation: false,
+          keyboard: false,
+          closeOnOutsideClick: false,
+     
+         
+      })
+
+  }
+  closeModal(commentsValid){
+    
+    
+    console.log(commentsValid)
+    
+    if(commentsValid.control.status =="INVALID")
+    {
+        this.isCommentsValid =true;
+    }
+    else{
+
+      this.isCommentsValid =false;
+    
+      this.modalService.close(this.modalRef);
+      this.data.comments=this.updatedComments;
+     
+        if(this.data.type=='validate')
+        {
+          this.validateAccount();
+        }
+  
+        if(this.data.type=='deactivate')
+        {
+          this.deactivateAccount();
+        }
+      }
+     
+  }
+
+  validateAccount()
+  {
+    console.log("comments:",this.data.commments)
+    this.accountTableService.validateCMAccountRegion
+    ("/MOLandingZoneGateway/api/cloudMargin/account",this.data)
+      .subscribe(data => {
+        console.log(data);
+        if (data == 1) {
+          console.log("Validated Successfully");
+          this.accountTableService.showSuccess('Validated Successfully');
+          this.accountTableService.getMonitoringDetails
+          ("/MOLandingZoneGateway/api/cloudMargin/accounts")
+          .subscribe(accounts => 
+            { //this.accounts = accounts;
+             if(accounts ==null)
+             {
+               this.accountTableService.showError('Unable to retrieve the account details');
+             }
+             else{
+              this.accountTableService.reloadGrid$.next(accounts);
+             }
+            });
+          //.subscribe(accounts => this.accountTableService.reloadGrid$.next(accounts));
+         // console.log(this.validatedObj);
+        }
+        else if(data == -1)
+        {
+          console.log("UnExpected error");
+          this.accountTableService.showError('Unexpected Error Occurred');
+        }
+      });
+  }
+
+
+ deactivateAccount()
+ {
+  this.accountTableService.validateCMAccountRegion
+  ("/MOLandingZoneGateway/api/cloudMargin/deactivate", this.data)
+  .subscribe(data => {
+    console.log(data);
+    if (data == 1) {
+      console.log("Deactivated Successfully");
+      this.accountTableService.showSuccess('Deactivated Successfully');
+      this.accountTableService.getMonitoringDetails
+      ("/MOLandingZoneGateway/api/cloudMargin/accounts")
+      .subscribe(accounts => 
+        { //this.accounts = accounts;
+         if(accounts ==null)
+         {
+           this.accountTableService.showError('Unable to retrieve the account details');
+         }
+         else{
+          this.accountTableService.reloadGrid$.next(accounts);
+         }
+        });
+      //.subscribe(accounts => this.accountTableService.reloadGrid$.next(accounts));
+    }
+    else if(data == -1)
+    {
+      console.log("UnExpected error");
+      this.accountTableService.showError('Unexpected Error Occurred');
+    }
+
+  });
+ }
+
+
+
+
+  onGridReady(params) {
+    this.gridApi = params.api;
+    this.gridColumnApi = params.columnApi;
+    this.gridApi.sizeColumnsToFit()
+  }
+
+  onFilterTextBoxChanged() 
+  {
+   var accountNumberComponent = this.gridApi.getFilterInstance("accountNumber");
+   accountNumberComponent.setModel({
+     type: "startsWith",
+     filter: this.searchText
+   });
+   this.gridApi.onFilterChanged();
+  }
+
+
+  createNewCMAccountRegion(form) {
+    
+        console.log(form);
+        if(form.controls.accountNumber.status=="INVALID"&&form.controls.region.status=="INVALID")
+        {
+          this.accountNotValid=true;
+          this.regionNotValid=true;
+          console.log('in acoount inv');
+        }
+        else if(form.controls.accountNumber.status=="INVALID")
+        {
+          this.accountNotValid=true;
+          this.regionNotValid=false;
+          console.log('in acoount inv');
+        }
+        else if(form.controls.region.status=="INVALID"){
+        this.regionNotValid=true;
+        this.accountNotValid =false;
+        console.log('in region inv');
+        }
+        else{
+          this.accountNotValid=false;
+          this.regionNotValid=false;
+            console.log("Create Account method called");
+            this.createNewCMAccountRegionObj = { accountNumber: this.accountNumber, region: this.region, comments: this.comments, createdBy: sessionStorage.getItem("userDetails") };
+            console.log(this.createNewCMAccountRegionObj);
+            this.accountTableService.createNewCMAccountRegion("/MOLandingZoneGateway/api/cloudMargin/account", this.createNewCMAccountRegionObj)
+              .subscribe(data => {
+                console.log(data);
+                if (data == 1) {
+                  console.log("Created Successfully");
+                  this.accountTableService.showSuccess('Account Created Successfully');
+                  this.accountTableService.getMonitoringDetails("/MOLandingZoneGateway/api/cloudMargin/accounts")
+                  .subscribe(accounts => 
+                    { this.accounts = accounts;
+                     if(this.accounts ==null)
+                     {
+                       this.accountTableService.showError('Unable to retrieve the account details');
+                     }
+                    });
+                }
+                else if(data == 0)
+                {
+                  console.log("Account already exists");
+                  //this.showWarning();
+                  this.accountTableService.showWarning('Account already Exists');
+                }
+                else 
+                {
+                  console.log("UnExpected error");
+                // this.showError();
+                this.accountTableService.showError('Unexpected Error Occurred');
+                }
+              });
+        }
+
+  }
+
+  ngOnDestroy(): void
+  {
+    this.reloadGrid.unsubscribe();
+  }
+
+}
+********************************************************************************
+account-table.component.css
+********************************************************************************
+.ng-valid[required], .ng-valid.required  {
+    border-left: 5px solid #42A948; /* green */
+  }
+  
+  .ng-invalid:not(form)  {
+    border-left: 5px solid #a94442; /* red */
+  }
+
+********************************************************************************
+cloudmargin-swift-message.component.html
+********************************************************************************
+<div class="row" style="
+margin-right: 25px;
+margin-left: 25px;">
+
+  <div class="panel panel-default">
+    <div class="panel-heading" style="text-align:left; font-size:15px; height: auto;">
+      Cloud Margin Swift-Outgoing
+    </div>
+    <div class="panel-body" style="width:100%;height:94px">
+      <div style="height:132px">
+        <form class="form-group" #form="ngForm">
+          <div class="row col-lg-12">
+
+            <div class="col-lg-1" style="text-align: left;">
+              <label for="CreatedOn">
+                <strong>From:</strong>
+              </label>
+            </div>
+            <div class="col-lg-2" style="text-align: left;">
+              <input type="text" placeholder="dd/mm/yyyy" [(ngModel)]="fromDate" class="form-control" bsDatepicker [bsConfig]="{ adaptivePosition: true }"
+                name="fromDate">
+
+            </div>
+            <!-- <div class="col-lg-1" style="text-align: left">
+              <timepicker [(ngModel)]="fromTime" name="fromTime" [minuteStep]="1" [showMeridian]="true"></timepicker>
+            </div> -->
+            <div class="col-lg-2"></div>
+
+            <div class="col-lg-1" style="text-align: left; width: 130px;">
+              <label>
+                <strong>To:</strong>
+              </label>
+            </div>
+            <div class="col-lg-2" style="text-align: left;">
+              <input type="text" placeholder="dd/mm/yyyy" [(ngModel)]="toDate" class="form-control" bsDatepicker [bsConfig]="{ adaptivePosition: true }"
+                name="toDate">
+            </div>
+            <!-- <div class="col-lg-1" style="text-align: left">
+              <timepicker [(ngModel)]="toTime" name="toTime" [minuteStep]="1" [showMeridian]="true"></timepicker>
+            </div> -->
+          </div>
+
+          
+        </form>
+        
+      </div>
+    
+  </div>
+</div>
+<div style="margin-top:5px">
+  <button class="btn btn-primary" style="width:100px;" 
+  (click)="dateCombined()">Search</button>
+
+
+
+  <button class="btn btn-primary" style="width:100px;margin-left: 15px" 
+  (click)="clearDateFilter()">Reset</button>
+
+</div>
+
+
+<modal #cmSwiftMessageModal>
+  <modal-header>
+    {{heading}}
+  </modal-header>
+
+  <modal-content>
+    <div *ngIf="ifSelected" style="word-wrap: break-word;">
+      {{swiftMessage}}
+    </div>
+
+  </modal-content>
+
+  <modal-footer>
+    <button class="btn btn-primary" (click)="closeSwiftModal()" >Close</button>
+  </modal-footer>
+</modal>
+<!-- <modal #nackMessage>
+  <modal-header>
+    Swift Message
+  </modal-header>
+
+  <modal-content>
+    <div *ngIf="ifSelectednack">
+      {{swiftMessage}}
+    </div>
+
+  </modal-content>
+
+  <modal-footer>
+    <button class="btn btn-primary" (click)="closeSwiftModal()" >Close</button>
+  </modal-footer>
+</modal> -->
+<div style="margin-top:20px">
+  <ag-grid-angular
+   style="height: 365px;width:100%"
+    class="ag-theme-balham" 
+    [columnDefs]="swiftMessagesOut" 
+    [rowData]="swiftOutgoingMessages"
+    [enableSorting]="true" 
+    [paginationAutoPageSize]="true"
+     [pagination]="true"
+      [icons]="icons" 
+      [enableServerSideSorting]="false"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+</div>
+</div>
+
+********************************************************************************
+cloudmargin-swift-message.component.ts
+********************************************************************************
+
+import { DatePipe } from '@angular/common';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { ModalManager } from 'ngb-modal';
+import { CloudmarginLoadSwiftMessageComponent } from 'src/app/cloudmargin-load-swift-message/cloudmargin-load-swift-message.component';
+import { AccountTableService } from 'src/app/shared/account-table.service';
+import { CloudmarginLoadNackReasonComponent } from '../cloudmargin-load-nack-reason/cloudmargin-load-nack-reason.component';
+
+@Component({
+  selector: 'app-cloudmargin-swift-message',
+  templateUrl: './cloudmargin-swift-message.component.html',
+  styleUrls: ['./cloudmargin-swift-message.component.css']
+})
+export class CloudmarginSwiftMessageComponent implements OnInit {
+
+  swiftMessagesOut;
+  fromDate :Date;
+  toDate :Date ;
+  private fromTime :Date;
+  private toTime :Date;
+  icons;
+  swiftOutgoingMessages;
+  private reloadCMMessageDetails;
+  private selectedSwiftMessage;
+  private gridApi;
+  private gridColumnApi;
+  ifSelected:boolean;
+  private swiftMessage;
+  heading:String;
+  @ViewChild('cmSwiftMessageModal') cmSwiftMessageModal;
+  private cmSwiftModalRef;
+  
+  
+
+
+  constructor(private accountService:AccountTableService,
+    private modalService: ModalManager,
+    private datePipe: DatePipe) { 
+
+      this.
+      swiftMessagesOut = [
+        {headerName: 'MUR', field: 'mur',width:100,filter:'agTextColumnFilter'},
+        {headerName: 'Sender BIC', field: 'sender',width:110,filter:'agTextColumnFilter'},
+        {headerName: 'Receiver BIC', field: 'receiver',width:110,filter:'agTextColumnFilter'},
+        {headerName: 'Message Type', field: 'messageType' ,width:80,filter:'agTextColumnFilter'},
+        {headerName: 'Status', field: 'status' ,width:80,filter:'agTextColumnFilter'},
+        {headerName: 'Creation Date', field: 'creationDate',width:120,suppressMenu: true,comparator: dateComparator,filter: 'agDateColumnFilter',
+        filterParams: {
+          comparator: function(filterLocalDateAtMidnight:Date, cellValue:Date) {
+             var cellDateValue = new Date(cellValue).toLocaleDateString('en-GB');
+            var dateAsString = cellDateValue;
+            if (dateAsString == null) return -1;
+            var dateParts = dateAsString.match(/(\d+)/g);
+            
+            var cellDate = new Date(Number(dateParts[2]), Number(dateParts[1])-1, Number(dateParts[0]));
+            console.log("filterLocalDateAtMidnight.getTime()",filterLocalDateAtMidnight.getTime());
+            console.log("cellDate.getTime()",cellDate.getTime());
+            if (filterLocalDateAtMidnight.getTime() == cellDate.getTime()) {
+              return 0;
+            }
+            if (cellDate < filterLocalDateAtMidnight) {
+              return -1;
+            }
+            if (cellDate > filterLocalDateAtMidnight) {
+              return 1;
+            }
+          }
+        }
+       },
+        {headerName: 'Updation Date', field: 'updationDate',comparator: dateComparator,width:100},
+        {headerName: 'Swift Message Block', cellRendererFramework:CloudmarginLoadSwiftMessageComponent,width:100},
+        {headerName: 'NACK Reason', cellRendererFramework:CloudmarginLoadNackReasonComponent,width:100}
+      ];
+
+      function dateComparator(date1, date2) {
+        var date1Number = monthToComparableNumber(new Date(date1).toLocaleDateString('en-GB'));
+        var date2Number = monthToComparableNumber(new Date(date2).toLocaleDateString('en-GB'));
+        
+        if (date1Number === null && date2Number === null) {
+          return 0;
+        }
+        if (date1Number === null) {
+          return -1;
+        }
+        if (date2Number === null) {
+          return 1;
+        }
+        return date1Number - date2Number;
+      }
+      function monthToComparableNumber(date) {
+        if (date === undefined || date === null || date.length !== 15) {
+          return null;
+        }
+        var yearNumber:number = date.substring(11, 15);
+        var monthNumber:number = date.substring(6, 8);
+        var dayNumber:number = date.substring(1, 3);
+        var result = (yearNumber * 10000) + (monthNumber * 100) + (dayNumber * 1);
+        return result;
+      }
+  
+    this.icons = {
+      filter: ' '
+    }
+    }
+
+  ngOnInit() {
+
+    this.accountService.getMonitoringDetails
+    ("/MOLandingZoneGateway/api/cloudMargin/messages")
+      .subscribe(swiftOutgoingMessages => 
+        {this.swiftOutgoingMessages = swiftOutgoingMessages;
+          if(this.swiftOutgoingMessages == null)
+          {
+            this.accountService.showError('Unable to retrieve the account details');
+          }
+        });
+
+      this.reloadCMMessageDetails=this.accountService.reloadCMMessageDetails$.subscribe(data=>{
+        this.swiftOutgoingMessages=data;
+      });
+
+      this.accountService.loadCMSwiftModal.subscribe(data=>{
+      
+        console.log("swiftMessageModal",data);
+        this.openSwiftModal(data);
+      })
+  }
+
+  openSwiftModal(selectedMessage){
+    
+    console.log("open modal called");
+ this.swiftMessage =selectedMessage['data'];
+    this.ifSelected =true;
+    this.heading=selectedMessage['heading'];
+  //  console.log(this.swiftMessage)
+      this.cmSwiftModalRef = this.modalService.open(this.cmSwiftMessageModal, {
+          size: "md",
+          modalClass: 'swiftMessageModal',
+          hideCloseButton: false,
+          centered: false,
+          backdrop: false,
+          animation: false,
+          keyboard: false,
+          closeOnOutsideClick: false
+         
+      });
+    }
+    
+
+
+  onGridReady(params) {
+    this.gridApi = params.api;
+    this.gridColumnApi = params.columnApi;
+    this.gridApi.sizeColumnsToFit()
+  }
+
+  dateCombined() {
+    if(this.fromDate ==null)
+    {
+      this.fromDate =new Date();
+    }
+    if(this.toDate ==null)
+    {
+      this.toDate =new Date();
+    }
+
+    if(this.fromTime ==null)
+    {
+      this.fromTime =new Date();
+      this.fromTime.setHours(0,0);
+    }
+
+    if(this.toTime ==null)
+    {
+      this.toTime =new Date();
+      this.toTime.setHours(23,59);
+    }
+
+
+    //console.log("this.fromDate.getDate()",this.fromDate.getDate())
+    if(this.fromDate > this.toDate)
+    {
+      this.accountService.showError('From Date should be less than To Date');
+    }
+    else{
+
+    
+  console.log("fromDate",this.fromDate.toLocaleDateString());
+  console.log("fromTime",this.fromTime.toLocaleTimeString());
+  console.log("toDate",this.toDate.toLocaleDateString());
+  console.log("toTime",this.toTime.toLocaleTimeString());
+
+  var dateFilterComponent = this.gridApi.getFilterInstance("creationDate");
+var cellDateValue = new Date(this.toDate).toLocaleDateString('en-GB');
+var dateParts = cellDateValue.match(/(\d+)/g);
+var toDateNew=new Date(Number(dateParts[2]), Number(dateParts[1])-1, Number(dateParts[0])+1);
+
+dateFilterComponent.setModel({
+  condition1:{
+    type:'inRange',
+    dateFrom:this.datePipe.transform(this.fromDate, 'yyyy-MM-dd'),
+    dateTo:this.datePipe.transform(toDateNew, 'yyyy-MM-dd')
+  },
+  condition2:{
+    type:'equals',
+    dateFrom:this.datePipe.transform(this.fromDate, 'yyyy-MM-dd'),
+  },
+  operator:'OR'
+ 
+});
+this.gridApi.onFilterChanged();
+    }
+
+  }
+
+  clearDateFilter() {
+    var dateFilterComponent = this.gridApi.getFilterInstance("creationDate");
+    dateFilterComponent.setModel(null);
+    this.gridApi.onFilterChanged();
+  }
+
+  closeSwiftModal()
+  {
+    console.log("close modal called");
+    this.modalService.close(this.cmSwiftModalRef);
+  }
+
+  ngOnDestroy(): void
+  { 
+    console.log("ondestroy called");
+    this.reloadCMMessageDetails.unsubscribe();
+  }
+
+
+}
+
+
+********************************************************************************
+cloudmargin-load-swift-message.component.html
+********************************************************************************
+<div>
+    <!-- <span class="glyphicon glyphicon-ok"></span>
+    <span class="glyphicon glyphicon-remove"></span> -->
+    <button type="button" class="btn btn-sm btn-primary" *ngIf="parameters"
+     style="width:130px;padding:1px 11px;margin-bottom:6px;" (click)="ViewSwiftMessage()" >
+     View Swift Message</button>
+    </div>
+
+********************************************************************************
+cloudmargin-load-swift-message.component.ts
+********************************************************************************
+
+import { Component, ElementRef } from '@angular/core';
+import { INoRowsOverlayAngularComp } from 'ag-grid-angular';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-cloudmargin-load-swift-message',
+  templateUrl: './cloudmargin-load-swift-message.component.html',
+  styleUrls: ['./cloudmargin-load-swift-message.component.css']
+})
+export class CloudmarginLoadSwiftMessageComponent implements INoRowsOverlayAngularComp {
+  parameters:any;
+  private selectedSwiftMessage :any;
+  //@ViewChild('swiftMessage') searchElement: ElementRef;
+
+  constructor(private accountTableService: AccountTableService,
+    private el: ElementRef) { }
+
+  agInit(params){
+   this.parameters =params.data;
+  }
+
+  ViewSwiftMessage()
+  {
+    console.log("View Swift Message called");
+    this.selectedSwiftMessage={
+      creationDate:this.parameters.creationDate,
+      messageType:this.parameters.messageType,
+      mur:this.parameters.mur,
+      receiver:this.parameters.receiver,
+      sender:this.parameters.sender,
+      status:this.parameters.status,
+      data:this.parameters.swiftMessage,
+      heading:'Swift Message'
+    };
+    this.accountTableService.loadCMSwiftModal.next(this.selectedSwiftMessage);
+  }
+
+}
+
+********************************************************************************
+cloudmargin-load-nack-reason.component.html
+********************************************************************************
+<div>
+  <button type="button" class="btn btn-sm btn-primary" *ngIf="parameters"
+   style="width:130px;padding:1px 11px;margin-bottom:6px;" (click)="ViewNackReason()" >
+   View Nack Reason</button>
+  </div>
+  
+  
+********************************************************************************
+cloudmargin-load-nack-reason.component.ts
+********************************************************************************
+
+import { Component, ElementRef } from '@angular/core';
+import { INoRowsOverlayAngularComp } from 'ag-grid-angular';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-cloudmargin-load-nack-reason',
+  templateUrl: './cloudmargin-load-nack-reason.component.html',
+  styleUrls: ['./cloudmargin-load-nack-reason.component.css']
+})
+export class CloudmarginLoadNackReasonComponent implements INoRowsOverlayAngularComp {
+  parameters:any;
+  private selectedSwiftMessage :any;
+  //@ViewChild('swiftMessage') searchElement: ElementRef;
+
+  constructor(private accountTableService: AccountTableService,
+    private el: ElementRef) { }
+
+  agInit(params){
+   this.parameters =params.data['nackReason'];
+  }
+
+  ViewNackReason()
+  {
+    console.log("View Nack Reason called");
+    let data={
+      data:this.parameters,
+      heading:'Nack Reason'
+    }
+    this.accountTableService.loadCMSwiftModal.next(data);
+  }
+
+}
+
+
+
