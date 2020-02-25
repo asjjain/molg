@@ -781,6 +781,117 @@ account-table.component.css
     border-left: 5px solid #a94442; /* red */
   }
 
+
+********************************************************************************
+active-recipient.component.html
+********************************************************************************
+<div>
+  <button type="button" class="btn btn-sm btn-success"*ngIf="isActivate"
+   style="width:79px;padding:1px 11px;margin-bottom:6px;" (click)="activateRecipient()">
+   Active</button>
+  <button type="button" class="btn btn-sm btn-danger" *ngIf="isDeactivate" 
+  style="padding:1px 11px;margin-bottom:6px;" (click)="deactivateRecipient()"
+  >
+  Deactivate</button>
+  
+  </div>
+
+********************************************************************************
+active-recipient.component.ts
+********************************************************************************
+
+import { Component, ElementRef, ViewChild } from '@angular/core';
+import { INoRowsOverlayAngularComp } from 'ag-grid-angular';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-active-recipient',
+  templateUrl: './active-recipient.component.html',
+  styleUrls: ['./active-recipient.component.css']
+})
+export class ActiveRecipientComponent implements INoRowsOverlayAngularComp {
+
+  @ViewChild('comments') searchElement: ElementRef;
+  private parameters:any;
+  private userName: String = sessionStorage.getItem("userDetails");
+  isActivate:boolean =false;
+  isDeactivate:boolean =false;
+  private flag:boolean;
+  private selectedRowObject:any;
+
+  constructor(private accountService: AccountTableService,
+    private el: ElementRef) { }
+
+  agInit(params){
+    this.parameters =params.data;
+
+      if(this.parameters.updatedBy != this.userName)
+      {
+        this.flag =true;
+      }
+      
+    if(this.flag)
+     { 
+       if(this.parameters.status=="ACTIVE")
+       {
+          this.isDeactivate =true;
+       }
+       else  if(this.parameters.status=="DEACTIVE")
+       {
+          this.isActivate =true;
+       }
+     }
+  }
+
+
+
+  activateRecipient()
+  {
+    console.log("activate recipient called");   
+  
+    this.selectedRowObject ={
+      recipientId:this.parameters.recipientId,
+      communicationMode:this.parameters.communicationMode,
+      faxNumber:this.parameters.faxNumber,
+      secondFaxNumber :this.parameters.secondFaxNumber,
+      emailAddress:this.parameters.emailAddress,
+      status:this.parameters.status,
+      createdBy:this.parameters.createdBy,
+      creationDate:this.parameters.creationDate,
+      updatedBy:this.parameters.updatedBy,
+      updatedDate:this.parameters.updatedDate,
+      validatedBy:sessionStorage.getItem("userDetails"),
+      comments:this.parameters.comments,
+      type:'activate'
+    }
+    this.accountService.loadEmailFaxModal.next(this.selectedRowObject);
+    console.log("activate Object:", this.selectedRowObject);
+  }
+
+  deactivateRecipient()
+  {
+    console.log("deactivate recipient called");
+      this.selectedRowObject ={
+        recipientId:this.parameters.recipientId,
+        communicationMode:this.parameters.communicationMode,
+        faxNumber:this.parameters.faxNumber,
+        secondFaxNumber :this.parameters.secondFaxNumber,
+        emailAddress:this.parameters.emailAddress,
+        status:this.parameters.status,
+        createdBy:this.parameters.createdBy,
+        creationDate:this.parameters.creationDate,
+        updatedBy:this.parameters.updatedBy,
+        updatedDate:this.parameters.updatedDate,
+        validatedBy:sessionStorage.getItem("userDetails"),
+        comments:this.parameters.comments,
+        type:'deactivate'
+      }
+      this.accountService.loadEmailFaxModal.next(this.selectedRowObject);
+      console.log("deactivate Object:", this.selectedRowObject);
+  }
+
+}
+
 ********************************************************************************
 cloudmargin-swift-message.component.html
 ********************************************************************************
@@ -1226,6 +1337,7 @@ export class CloudmarginLoadNackReasonComponent implements INoRowsOverlayAngular
   {
     console.log("View Nack Reason called");
     let data={
+   
       data:this.parameters,
       heading:'Nack Reason'
     }
@@ -1233,6 +1345,1323 @@ export class CloudmarginLoadNackReasonComponent implements INoRowsOverlayAngular
   }
 
 }
+
+********************************************************************************
+corporate-action.component.html
+********************************************************************************
+<div class="row" style="
+margin-right: 25px;
+margin-left: 25px;">
+
+  <div class="panel panel-default">
+    <div class="panel-heading" style="text-align:left; font-size:15px; height: auto;">Corporate Action
+    </div>
+    <div class="panel-body" style="width:100%;height:94px">
+      <div style="height:132px">
+        <form class="form-group" #form="ngForm">
+          <div class="row col-lg-12">
+
+            <div class="col-lg-1" style="text-align: left;">
+              <label for="CreatedOn">
+                <strong>From:</strong>
+              </label>
+            </div>
+            <div class="col-lg-2" style="text-align: left;">
+              <input type="text" placeholder="dd/mm/yyyy" [(ngModel)]="fromDate" class="form-control" bsDatepicker [bsConfig]="{ adaptivePosition: true }"
+                name="fromDate">
+
+            </div>
+            <!-- <div class="col-lg-1" style="text-align: left">
+              <timepicker [(ngModel)]="fromTime" name="fromTime" [minuteStep]="1" [showMeridian]="true"></timepicker>
+            </div> -->
+            <div class="col-lg-2"></div>
+
+            <div class="col-lg-1" style="text-align: left; width: 130px;">
+              <label>
+                <strong>To:</strong>
+              </label>
+            </div>
+            <div class="col-lg-2" style="text-align: left;">
+              <input type="text" placeholder="dd/mm/yyyy" [(ngModel)]="toDate" class="form-control" bsDatepicker [bsConfig]="{ adaptivePosition: true }"
+                name="toDate">
+            </div>
+            <!-- <div class="col-lg-1" style="text-align: left">
+              <timepicker [(ngModel)]="toTime" name="toTime" [minuteStep]="1" [showMeridian]="true"></timepicker>
+            </div> -->
+          </div>
+
+          
+        </form>
+        
+      </div>
+    
+  </div>
+</div>
+<div style="margin-top:5px">
+  <button class="btn btn-primary" style="width:100px;" 
+  (click)="dateCombined()">Search</button>
+
+
+
+  <button class="btn btn-primary" style="width:100px;margin-left: 15px" 
+  (click)="clearDateFilter()">Reset</button>
+
+</div>
+
+
+<modal #swiftMessageModal>
+  <modal-header>
+    {{heading}}
+  </modal-header>
+
+  <modal-content>
+    <div *ngIf="ifSelected" style="word-wrap: break-word;">
+      {{swiftMessage}}
+    </div>
+
+  </modal-content>
+
+  <modal-footer>
+    <button class="btn btn-primary" (click)="closeSwiftModal()" >Close</button>
+  </modal-footer>
+</modal>
+
+<div style="margin-top:20px">
+  <ag-grid-angular style="height: 365px;width:100%" class="ag-theme-balham" [columnDefs]="swiftMessagesOut" [rowData]="swiftMessages"
+    [enableSorting]="true" [paginationAutoPageSize]="true" [pagination]="true" [icons]="icons" [enableServerSideSorting]="false"
+    (gridReady)="onGridReady($event)">
+  </ag-grid-angular>
+</div>
+</div>
+
+
+********************************************************************************
+corporate-action.component.ts
+********************************************************************************
+import { DatePipe } from '@angular/common';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ModalManager } from 'ngb-modal';
+import { Subscription } from 'rxjs/internal/Subscription';
+import { SwiftMessageComponent } from 'src/app/swift-message/swift-message.component';
+import { CorporateActionNackReasonComponent } from '../corporate-action-nack-reason/corporate-action-nack-reason.component';
+import { AccountTableService } from '../shared/account-table.service';
+
+
+@Component({
+  selector: 'app-corporate-action',
+  templateUrl: './corporate-action.component.html',
+  styleUrls: ['./corporate-action.component.css']
+})
+export class CorporateActionComponent implements OnInit,OnDestroy {
+  reloadSwiftDetails:Subscription;
+  swiftMessagesOut;
+  private gridApi;
+  private gridColumnApi;
+  private rowData;
+  icons;
+  swiftMessages;
+  private selectedSwiftMessage;
+  private swiftMessage;
+  ifSelected:boolean;
+  fromDate :Date;
+  toDate :Date ;
+  private fromTime :Date;
+  private toTime :Date;
+  heading: String;
+
+  constructor(private accountService:AccountTableService,
+         private modalService: ModalManager,
+         private datePipe: DatePipe) {
+         
+    this.
+    swiftMessagesOut = [
+      {headerName: 'MUR', field: 'mur',width:100,filter:'agTextColumnFilter'},
+      {headerName: 'Sender BIC', field: 'sender',width:110,filter:'agTextColumnFilter'},
+      {headerName: 'Receiver BIC', field: 'receiver',width:110,filter:'agTextColumnFilter'},
+      {headerName: 'Message Type', field: 'messageType' ,width:80,filter:'agTextColumnFilter'},
+      {headerName: 'Status', field: 'status' ,width:80,filter:'agTextColumnFilter'},
+      {headerName: 'Creation Date', field: 'creationDate',width:120,suppressMenu: true,comparator: dateComparator,filter: 'agDateColumnFilter',
+      filterParams: {
+        comparator: function(filterLocalDateAtMidnight:Date, cellValue:Date) {
+           var cellDateValue = new Date(cellValue).toLocaleDateString('en-GB');
+          var dateAsString = cellDateValue;
+          if (dateAsString == null) return -1;
+          var dateParts = dateAsString.match(/(\d+)/g);
+          
+          var cellDate = new Date(Number(dateParts[2]), Number(dateParts[1])-1, Number(dateParts[0]));
+          console.log("filterLocalDateAtMidnight.getTime()",filterLocalDateAtMidnight.getTime());
+          console.log("cellDate.getTime()",cellDate.getTime());
+          if (filterLocalDateAtMidnight.getTime() == cellDate.getTime()) {
+            return 0;
+          }
+          if (cellDate < filterLocalDateAtMidnight) {
+            return -1;
+          }
+          if (cellDate > filterLocalDateAtMidnight) {
+            return 1;
+          }
+        }
+      }
+     },
+      {headerName: 'Updation Date', field: 'updationDate',width:100, comparator: dateComparator},
+      {headerName: 'Swift Message Block', cellRendererFramework:SwiftMessageComponent,width:100},
+      {headerName: 'NACK Reason', cellRendererFramework:CorporateActionNackReasonComponent,width:100}
+    ];
+
+   function dateComparator(date1, date2) {
+    var date1Number = monthToComparableNumber(new Date(date1).toLocaleDateString('en-GB'));
+    var date2Number = monthToComparableNumber(new Date(date2).toLocaleDateString('en-GB'));
+
+    if (date1Number === null && date2Number === null) {
+      return 0;
+    }
+    if (date1Number === null) {
+      return -1;
+    }
+    if (date2Number === null) {
+      return 1;
+    }
+    return date1Number - date2Number;
+  }
+  function monthToComparableNumber(date) {
+    if (date === undefined || date === null || date.length !== 15) {
+      return null;
+    }
+    var yearNumber:number = date.substring(11, 15);
+    var monthNumber:number = date.substring(6, 8);
+    var dayNumber:number = date.substring(1, 3);
+    var result = (yearNumber * 10000) + (monthNumber * 100) + (dayNumber * 1);
+    return result;
+  }
+ 
+
+  this.icons = {
+    filter: ' '
+  }
+   }
+
+   @ViewChild('swiftMessageModal') swiftMessageModal;
+   private swiftModalRef;
+
+  ngOnInit() {
+
+    console.log("ngOnInit Called");
+    this.accountService.getMonitoringDetails
+    ("/MOLandingZoneGateway/api/corporateAction/messages")
+      .subscribe(swiftMessages => 
+        {this.swiftMessages = swiftMessages;
+          if(this.swiftMessages == null)
+          {
+            this.accountService.showError('Unable to retrieve the account details');
+          }
+        });
+
+      this.reloadSwiftDetails=this.accountService.reloadMessageDetails$.subscribe(data=>{
+        this.swiftMessages=data;
+      });
+
+      this.accountService.loadSwiftModal.subscribe(data=>{
+        this.selectedSwiftMessage=data;
+        console.log("swiftMessageModal",this.selectedSwiftMessage);
+        this.openSwiftModal(this.selectedSwiftMessage);
+        
+      })
+  }
+
+
+  onGridReady(params) {
+    this.gridApi = params.api;
+    this.gridColumnApi = params.columnApi;
+    this.gridApi.sizeColumnsToFit()
+  }
+
+
+  dateCombined() {
+    if(this.fromDate ==null)
+    {
+      this.fromDate =new Date();
+    }
+    if(this.toDate ==null)
+    {
+      this.toDate =new Date();
+    }
+
+    if(this.fromTime ==null)
+    {
+      this.fromTime =new Date();
+      this.fromTime.setHours(0,0);
+    }
+
+    if(this.toTime ==null)
+    {
+      this.toTime =new Date();
+      this.toTime.setHours(23,59);
+    }
+
+
+    //console.log("this.fromDate.getDate()",this.fromDate.getDate())
+    if(this.fromDate > this.toDate)
+    {
+      this.accountService.showError('From Date should be less than To Date');
+    }
+    else{
+
+    
+  console.log("fromDate",this.fromDate.toLocaleDateString());
+  console.log("fromTime",this.fromTime.toLocaleTimeString());
+  console.log("toDate",this.toDate.toLocaleDateString());
+  console.log("toTime",this.toTime.toLocaleTimeString());
+
+  var dateFilterComponent = this.gridApi.getFilterInstance("creationDate");
+var cellDateValue = new Date(this.toDate).toLocaleDateString('en-GB');
+var dateParts = cellDateValue.match(/(\d+)/g);
+var toDateNew=new Date(Number(dateParts[2]), Number(dateParts[1])-1, Number(dateParts[0])+1);
+
+dateFilterComponent.setModel({
+  condition1:{
+    type:'inRange',
+    dateFrom:this.datePipe.transform(this.fromDate, 'yyyy-MM-dd'),
+    dateTo:this.datePipe.transform(toDateNew, 'yyyy-MM-dd')
+  },
+  condition2:{
+    type:'equals',
+    dateFrom:this.datePipe.transform(this.fromDate, 'yyyy-MM-dd'),
+  },
+  operator:'OR'
+ 
+});
+this.gridApi.onFilterChanged();
+    }
+
+  }
+
+  clearDateFilter() {
+    var dateFilterComponent = this.gridApi.getFilterInstance("creationDate");
+    dateFilterComponent.setModel(null);
+    this.gridApi.onFilterChanged();
+  }
+
+  openSwiftModal(selectedMessage){
+    
+    console.log("open modal called");
+
+    this.swiftMessage =selectedMessage['data'];
+    this.ifSelected =true;
+    this.heading=selectedMessage['heading'];
+  //  console.log(this.swiftMessage)
+      this.swiftModalRef = this.modalService.open(this.swiftMessageModal, {
+          size: "md",
+          modalClass: 'swiftMessageModal',
+          hideCloseButton: false,
+          centered: false,
+          backdrop: false,
+          animation: false,
+          keyboard: false,
+          closeOnOutsideClick: false
+         
+      });
+  }
+
+  closeSwiftModal()
+  {
+    console.log("close modal called");
+    this.modalService.close(this.swiftModalRef);
+    
+  }
+
+  ngOnDestroy(): void
+  { 
+    console.log("ondestroy called");
+    this.reloadSwiftDetails.unsubscribe();
+  }
+  
+
+}
+
+
+********************************************************************************
+corporate-action-nack-reason.component.html
+********************************************************************************
+<div>
+  <button type="button" class="btn btn-sm btn-primary" *ngIf="parameters && activateButton" 
+   style="width:130px;padding:1px 11px;margin-bottom:6px;" (click)="ViewNackReason()" >
+   View Nack Reason</button>
+  </div>
+  
+********************************************************************************
+corporate-action-nack-reason.component.ts
+********************************************************************************
+
+
+import { Component, ElementRef } from '@angular/core';
+import { INoRowsOverlayAngularComp } from 'ag-grid-angular';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-corporate-action-nack-reason',
+  templateUrl: './corporate-action-nack-reason.component.html',
+  styleUrls: ['./corporate-action-nack-reason.component.css']
+})
+export class CorporateActionNackReasonComponent implements INoRowsOverlayAngularComp {
+  parameters:any;
+  private selectedSwiftMessage :any;
+  activateButton:boolean;
+  //@ViewChild('swiftMessage') searchElement: ElementRef;
+
+  constructor(private accountTableService: AccountTableService,
+    private el: ElementRef) { }
+
+    agInit(params){
+      this.activateButton=false;
+      this.parameters =params.data['nackReason'];
+      if(params.data['status'] === "NAK"){
+        this.activateButton=true;
+      }
+     }
+   
+     ViewNackReason()
+     {
+       console.log("View Nack Reason called");
+       let data={
+         data:this.parameters,
+         heading:'Nack Reason'
+       }
+       this.accountTableService.loadSwiftModal.next(data);
+     }
+
+}
+
+********************************************************************************
+corporate-action-nack-reason.component.html
+********************************************************************************
+<div>
+  <button type="button" class="btn btn-sm btn-primary" *ngIf="parameters && activateButton" 
+   style="width:130px;padding:1px 11px;margin-bottom:6px;" (click)="ViewNackReason()" >
+   View Nack Reason</button>
+  </div>
+  
+********************************************************************************
+corporate-action-nack-reason.component.ts
+********************************************************************************
+
+import { Component, ElementRef } from '@angular/core';
+import { INoRowsOverlayAngularComp } from 'ag-grid-angular';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-corporate-action-nack-reason',
+  templateUrl: './corporate-action-nack-reason.component.html',
+  styleUrls: ['./corporate-action-nack-reason.component.css']
+})
+export class CorporateActionNackReasonComponent implements INoRowsOverlayAngularComp {
+  parameters:any;
+  private selectedSwiftMessage :any;
+  activateButton:boolean;
+  //@ViewChild('swiftMessage') searchElement: ElementRef;
+
+  constructor(private accountTableService: AccountTableService,
+    private el: ElementRef) { }
+
+    agInit(params){
+      this.activateButton=false;
+      this.parameters =params.data['nackReason'];
+      if(params.data['status'] === "NAK"){
+        this.activateButton=true;
+      }
+     }
+   
+     ViewNackReason()
+     {
+       console.log("View Nack Reason called");
+       let data={
+         data:this.parameters,
+         heading:'Nack Reason'
+       }
+       this.accountTableService.loadSwiftModal.next(data);
+     }
+
+}
+
+********************************************************************************
+page-not-found.component.html
+********************************************************************************
+
+<div class="row" style="
+margin-right: 25px;
+margin-left: 25px;">
+
+  <div class="panel panel-default">
+    <div class="panel-heading" style="text-align:left; font-size:15px; height: auto;">Unauthorized Access
+    </div>
+    <div class="panel-body" style="width:100%;height:94px">
+      You are not authorized to access this application. Kindly raise the request.
+      </div>
+      </div>
+
+********************************************************************************
+page-not-found.component.ts
+********************************************************************************
+
+import { Component, OnInit } from '@angular/core';
+
+@Component({
+  selector: 'app-page-not-found',
+  templateUrl: './page-not-found.component.html',
+  styleUrls: ['./page-not-found.component.css']
+})
+export class PageNotFoundComponent implements OnInit {
+
+  constructor() { }
+
+  ngOnInit() {
+  }
+
+}
+
+********************************************************************************
+recipient-data.component.css
+********************************************************************************
+.ng-valid[required], .ng-valid.required  {
+    border-left: 5px solid #42A948; /* green */
+  }
+  
+  .ng-invalid:not(form)  {
+    border-left: 5px solid #a94442; /* red */
+  }
+
+********************************************************************************
+recipient-data.component.html
+********************************************************************************
+<div class="row" style="
+margin-right: 25px;
+margin-left: 25px;">
+<div class="panel panel-default">  
+  <div class="panel-heading" style="text-align:left; font-size:15px; height: auto;">
+    Recipient Configuration
+  </div>
+
+<div class="panel-body" style="width:100%;">
+    <div style="margin-left:380px;">
+        <form class="form-group"  #form="ngForm" (ngSubmit)="  updateRecipientDetails()">
+        <div class="row col-lg-12" style="margin-top:8px;">
+              <div class="col-lg-2">
+              <label for="recipientId">Recipient Id</label>
+              </div>
+              <div class="col-lg-3">
+              <input class="form-control" type="text" placeholder="Enter Recipient Id"
+               name ="recipientId" [(ngModel)]="recipientId" required maxlength="20" #recipientIdValid="ngModel" >   
+               <div *ngIf="recipientIdValid.invalid && (recipientIdValid.dirty || recipientIdValid.touched)"
+               class="alert alert-danger">
+              <div *ngIf="recipientIdValid.errors.required">
+                  Recipient Id is required
+                                       </div>  
+                                    </div>
+                                    </div> 
+        </div>
+            <div class="row col-lg-12" style="margin-top:8px;">
+                <div class="col-lg-2">
+                <label for="communication">Channel</label>
+                </div>
+                <div class="col-lg-3">
+                    <select class="form-control" [(ngModel)]="channel" 
+                    name="channel" required (ngModelChange)="onSelectCommunication($event)" #channelValid="ngModel" >
+                       <option disabled selected value="">Select Channel</option>
+                        <option value="Email">Email</option>
+                        <option value="Fax">Fax</option>
+                        <option value="Both">Both</option>
+                      </select>
+                      <div *ngIf="channelValid.invalid && (channelValid.dirty || channelValid.touched)"
+                      class="alert alert-danger">
+                     <div *ngIf="channelValid.errors.required">
+                         Channel is required
+                                              </div>  
+                                           </div>
+                </div>
+            </div>
+
+            <div class="row col-lg-12" style="margin-top:8px;" *ngIf="isEmail">
+                    <div class="col-lg-2">
+                    <label for="email">Email</label>
+                    </div>
+                    <div class="col-lg-3">
+                            <input type="text" class="form-control" required  id="email" 
+                            name ="email" [(ngModel)]="email"
+                            pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+                            #emailValid="ngModel"/>
+
+                            <div *ngIf="emailValid.invalid && (emailValid.dirty || emailValid.touched)"
+                            class="alert alert-danger">
+                                <div *ngIf="emailValid.errors.required">
+                                            Email is required
+                                </div> 
+                                
+                                <div  *ngIf="emailValid.errors.pattern">
+                                        Email is invalid
+                                </div> 
+                            </div>
+                    </div>
+                    <div class="col-lg-2">
+                            <button type="button" class="btn btn-primary" (click)="addEmails()">+Add More..</button>
+                    </div>
+            </div>
+
+            <ng-template  ngFor let-emailValue [ngForOf]="emailForm.emails"
+            let-index="index" let-isLast="last">
+                <div class="row col-lg-12" style="margin-top:8px;">
+                <div class="col-lg-2">
+                    </div>
+                    <div class="col-lg-3">
+                    <input type="text" class="form-control" required 
+                    [(ngModel)]="emailValue.email" name="{{index}}" 
+                    pattern="^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+                    #emailValueValid="ngModel" />
+                    <div *ngIf="emailValueValid.invalid && (emailValueValid.dirty || emailValueValid.touched)"
+                    class="alert alert-danger">
+                        <div *ngIf="emailValueValid.errors.required">
+                                    Email is required
+                        </div> 
+                        
+                        <div  *ngIf="emailValueValid.errors.pattern">
+                                Email is invalid
+                        </div> 
+                    </div>
+                    </div>
+
+                    <div class="col-lg-1">
+                            <button type="button" name ="{{index}}" class="btn btn-danger" (click)="onClick($event)">Remove</button>
+                    </div>
+
+                </div>
+                
+            </ng-template>
+   
+            <div class="row col-lg-12" style="margin-top:8px;" *ngIf="isFax">
+                <div class="col-lg-2">
+                <label for="faxNumber">Fax Number</label>
+                </div>
+                <div class="col-lg-3">
+                    <input class="form-control" type="text" placeholder="Enter Fax Number"
+                    name ="faxNumber" [(ngModel)]="faxNumber" required maxlength="20" #faxNumberValid="ngModel">
+                    <div *ngIf="faxNumberValid.invalid && (faxNumberValid.dirty || faxNumberValid.touched)"
+                    class="alert alert-danger">
+                   <div *ngIf="faxNumberValid.errors.required">
+                       Fax Number is required
+                    </div>  
+                </div>
+                </div>
+            </div>
+
+            <div class="row col-lg-12" style="margin-top:8px;" *ngIf="isFax">
+                <div class="col-lg-2">
+                <label for="secondfaxNumber">2nd Fax Number</label>
+                </div>
+                <div class="col-lg-3">
+                    <input class="form-control" type="text"
+                    name ="secondfaxNumber" [(ngModel)]="secondfaxNumber" maxlength="20">
+                </div>
+            </div>
+
+
+            <div class="row col-lg-12" style="margin-top:8px;">
+                <div class="col-lg-2">
+                <label for="comments">Comments</label>
+                </div>
+                <div class="col-lg-3">
+                    <input class="form-control" type="text"
+                    name ="comments" [(ngModel)]="comments">
+                </div>
+            </div>
+
+            <div class="row col-lg-12" style="margin-top:8px;">
+                    <div class="col-lg-2"></div>
+                    <div class="col-lg-1">
+                        <button type="submit" class="btn btn-primary"[disabled]="!form.valid">Submit</button>
+                    </div>
+                    <div class="col-lg-1" style="margin-left:20px;">
+                            <button type="button" class="btn btn-primary" (click)="cancelEdit()">Cancel</button>
+                        </div>
+
+                </div>
+          </form> 
+</div>
+      
+</div>
+
+</div>
+
+
+<div class="form-group">
+    <input type="text" [(ngModel)]="searchText" class="form-control pull-right" 
+    style="width:200px;margin-right:10px;margin-bottom:10px;"
+     placeholder="Search Recipient Id" (input)="onFilterTextBoxChanged()"/>
+</div>
+</div>
+
+<modal #myEmailFaxModal>
+        <modal-header>
+            Reason for Activation/Deactivation
+        </modal-header>
+     
+        <modal-content>
+          <input type="text"  [(ngModel)]="updatedComments" required  maxlength="200" 
+           class ="form-control" name="updatedComments" #commentsValid="ngModel" id="updatedComments">
+           <div *ngIf="isCommentsValid" class="alert alert-danger">
+           Please enter the comments.
+           </div>
+        </modal-content>
+     
+        <modal-footer>
+            <button class="btn btn-primary"  (click)="closeModal(commentsValid)">Add</button>
+        </modal-footer>
+    </modal>
+
+<div class="row" style="
+margin-left: 25px;
+margin-right: 25px;
+"
+>
+<ag-grid-angular style="height: 365px;width: 100%" 
+class="ag-theme-balham" 
+[rowData]="recipientDetails" 
+[columnDefs]="recipientDetailsColumnDefs"
+[enableSorting]="true" 
+[paginationAutoPageSize]="true"
+[pagination]="true"
+[icons]="icons"
+[enableServerSideSorting]="false"
+(gridReady)="onGridReady($event)"
+[rowSelection]="rowSelection"
+(rowSelected)="onRowSelected($event)">
+</ag-grid-angular>
+</div>
+
+
+********************************************************************************
+recipient-data.component.ts
+********************************************************************************
+
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ModalManager } from 'ngb-modal';
+import { Subscription } from 'rxjs/internal/Subscription';
+import { ActiveRecipientComponent } from 'src/app/active-recipient/active-recipient.component';
+import { RecipientDetails } from 'src/assets/recipientDetails';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-recipient-data',
+  templateUrl: './recipient-data.component.html',
+  styleUrls: ['./recipient-data.component.css']
+})
+export class RecipientDataComponent implements OnInit,OnDestroy {
+ 
+  reloadEmailFaxGrid:Subscription;
+  channel:String;
+  isEmail:boolean;
+  isFax:boolean;
+  recipientId:String;
+  private recipientIdOld :String;
+  private email:string;
+  private faxNumber:String;
+  private secondfaxNumber:String;
+  private activated:boolean;
+  private recipientDetail :RecipientDetails;
+  recipientDetails;
+  private recipientDetailsObj;
+  private gridApi;
+  private gridColumnApi;
+  recipientDetailsColumnDefs;
+  searchText:String;
+  icons;
+  private recipientIdNotValid:boolean;
+  private channelNotValid :boolean;
+  private faxNotValid:boolean;
+  rowSelection;
+  private data;
+  comments;
+  updatedComments;
+  private emailAddress :string[];
+  isCommentsValid:boolean =false;
+  private selectedRecipientId;
+  private selectedFaxNumber;
+  private selectedEmailAddress;
+  private selectedSecondFaxNumber;
+  private  selectedChannel;
+  private  selectedComments;
+  private ind :number =0;
+
+
+
+  public emailForm: {
+    emails: Email[];
+    };
+
+
+  constructor(private accountService: AccountTableService,private modalService: ModalManager) { 
+
+    this.
+    recipientDetailsColumnDefs = [
+      {headerName: 'Operations',cellRendererFramework:ActiveRecipientComponent,width:100},
+      {headerName: 'Recipient Id', field: 'recipientId',width:100},
+      {headerName: 'Channel', field: 'communicationMode',width:100},
+      {headerName: 'Fax Number', field: 'faxNumber',width:100},
+      {headerName: 'Second Fax Number', field: 'secondFaxNumber',width:100},
+      {headerName: 'Email Address', field: 'emailAddress',width:130},
+      {headerName: 'Status', field: 'status',width:70},
+      {headerName: 'Created By', field: 'createdBy' ,width:100},
+      {headerName: 'Creation Date', field: 'creationDate' ,width:100},
+      {headerName: 'Updated By', field: 'updatedBy',width:100},
+      {headerName: 'Updated Date', field: 'updatedDate',width:100},
+      {headerName: 'Comments', field: 'comments',width:100}
+    ];
+
+    this.icons = {
+      filter: ' '
+    };
+
+    this.rowSelection ='single';
+
+    this.emailForm = {
+      emails: []
+      };
+       
+     
+  }
+
+  @ViewChild('myEmailFaxModal') myEmailFaxModal;
+  private emailFaxModalRef;
+
+  ngOnInit() {
+    console.log("ngOnInit Called");
+    this.accountService.getMonitoringDetails
+    ("/MOLandingZoneGateway/api/emailFax/details")
+      .subscribe(recipientDetails => 
+       { this.recipientDetails = recipientDetails;
+        console.log(this.recipientDetails)
+        if(this.recipientDetails ==null)
+        {
+          this.accountService.showError('Unable to retrieve the account details');
+        }
+       });
+
+       this.reloadEmailFaxGrid=this.accountService.reloadEmailFaxGrid$.subscribe(data=>{
+        this.recipientDetails=data;
+      });
+    
+    this.accountService.loadEmailFaxModal.subscribe(data=>{
+      this.data=data;
+      this.openModal();
+    })
+    
+  }
+
+  // I add a new email record to the form-model.
+public addEmails() : void {  
+//debugger
+
+ this.emailForm.emails.push({
+ id: this.ind, // <--- uniqueness hook.
+ email :""
+ });
+  
+ }
+
+ onClick(event){
+   let emailIndex:number = event.target.name;
+   this.ind = event.target.id;
+   console.log(this.emailForm.emails.length);
+   
+   this.removeEmails(emailIndex);
+ }
+
+
+public removeEmails(index:number) : void {
+ this.emailForm.emails.splice( index, 1 );
+ console.log(this.emailForm.emails);
+ }
+
+  cancelEdit()
+  {
+    this.recipientId ="";
+    this.email ="";
+    this.faxNumber="";
+    this.secondfaxNumber ="";
+    this.channel="";
+    this.comments="";
+    this.emailForm.emails =[];
+    this.ind=0;
+  }
+
+  openModal(){
+    
+      this.emailFaxModalRef = this.modalService.open(this.myEmailFaxModal, {
+          size: "md",
+          modalClass: 'myEmailFaxModal',
+          hideCloseButton: false,
+          centered: false,
+          backdrop: false,
+          animation: false,
+          keyboard: false,
+          closeOnOutsideClick: false,
+     
+         
+      })
+    }
+
+    closeModal(commentsValid){
+      
+      
+      console.log(commentsValid)
+      
+      if(commentsValid.control.status =="INVALID")
+      {
+          this.isCommentsValid =true;
+      }
+      else{
+  
+        this.isCommentsValid =false;
+      
+        this.modalService.close(this.emailFaxModalRef);
+        this.data.comments=this.updatedComments;
+       
+          if(this.data.type=='activate')
+          {
+            this.activateRecipient();
+          }
+    
+          if(this.data.type=='deactivate')
+          {
+            this.deactivateRecipient();
+          }
+        }
+       
+    }
+
+    activateRecipient()
+    {
+      console.log("comments:",this.data.commments)
+      this.accountService.validateCMAccountRegion
+      ("/MOLandingZoneGateway/api/emailFax/activate",this.data)
+        .subscribe(data => {
+          console.log(data);
+          if (data == 1) {
+            console.log("Activated Successfully");
+            this.accountService.showSuccess('Activated Successfully');
+            this.accountService.getMonitoringDetails
+            ("/MOLandingZoneGateway/api/emailFax/details")
+            .subscribe(recipientDetails => 
+              { //this.accounts = accounts;
+               if(recipientDetails ==null)
+               {
+                 this.accountService.showError('Unable to retrieve the recipient details');
+               }
+               else{
+                this.accountService.reloadEmailFaxGrid$.next(recipientDetails);
+               }
+              });
+            //.subscribe(accounts => this.accountTableService.reloadGrid$.next(accounts));
+           // console.log(this.validatedObj);
+          }
+          else if(data == -1)
+          {
+            console.log("UnExpected error");
+            this.accountService.showError('Unexpected Error Occurred');
+          }
+        });
+    }
+
+    deactivateRecipient()
+    {
+      this.accountService.validateCMAccountRegion
+      ("/MOLandingZoneGateway/api/emailFax/deactivate", this.data)
+      .subscribe(data => {
+        console.log(data);
+        if (data == 1) {
+          console.log("Deactivated Successfully");
+          this.accountService.showSuccess('Deactivated Successfully');
+          this.accountService.getMonitoringDetails
+          ("/MOLandingZoneGateway/api/emailFax/details")
+          .subscribe(recipientDetails => 
+            { //this.accounts = accounts;
+             if(recipientDetails ==null)
+             {
+               this.accountService.showError('Unable to retrieve the account details');
+             }
+             else{
+              this.accountService.reloadEmailFaxGrid$.next(recipientDetails);
+             }
+            });
+          //.subscribe(accounts => this.accountTableService.reloadGrid$.next(accounts));
+        }
+        else if(data == -1)
+        {
+          console.log("UnExpected error");
+          this.accountService.showError('Unexpected Error Occurred');
+        }
+    
+      });
+    }
+
+  onSelectCommunication(channelValue : String)
+  {
+    console.log("on select called");
+    this.channel =channelValue;
+    console.log("this.channel");
+    if(this.channel == "Email")
+    {
+      this.isEmail=true;
+      this.isFax =false;
+    }
+    else if(this.channel == "Fax")
+    {
+      this.isFax = true;
+      this.isEmail=false;
+      this.emailForm.emails =[];
+    }
+    else if(this.channel =="Both")
+    {
+      this.isEmail =true;
+      this.isFax =true;
+    }
+    else
+    {
+      this.isEmail =false;
+      this.isFax =false;
+      this.emailForm.emails =[];
+    }
+
+  }
+
+  onRowSelected(params)
+  {
+    var selectedRows = this.gridApi.getSelectedRows();
+    var selectedRecipientId = "";
+    var selectedFaxNumber = "";
+    var selectedEmailAddress = "";
+    var selectedSecondFaxNumber ="";
+    var  selectedChannel ="";
+    var  selectedComments ="";
+    selectedRows.forEach(function(selectedRow, index) {
+      if (index !== 0) {
+        selectedRecipientId += ", ";
+        selectedFaxNumber += ", ";
+        selectedEmailAddress += ", ";
+        selectedSecondFaxNumber += ", ";
+        selectedChannel += ", ";
+        selectedComments += ", ";
+      }
+      selectedRecipientId += selectedRow.recipientId;
+      selectedFaxNumber +=selectedRow.faxNumber;
+      selectedSecondFaxNumber +=selectedRow.secondFaxNumber;
+      selectedEmailAddress +=selectedRow.emailAddress;
+      selectedChannel +=selectedRow.communicationMode;
+      selectedComments +=selectedRow.comments;
+    });
+    
+    this.recipientId = selectedRecipientId;
+    this.selectedRecipientId =selectedRecipientId;
+    
+ 
+    if(selectedFaxNumber !== "undefined")
+    {  
+      this.isFax =true;
+      this.faxNumber =selectedFaxNumber;
+      this.selectedFaxNumber =selectedFaxNumber;
+      if(selectedSecondFaxNumber !== "undefined")
+      {
+        this.secondfaxNumber =selectedSecondFaxNumber;
+        this.selectedSecondFaxNumber =selectedSecondFaxNumber;
+      }
+      else{
+        this.secondfaxNumber ="";
+        this.selectedSecondFaxNumber ="";
+      }
+    }
+    else{
+      this.faxNumber ="";
+      this.selectedFaxNumber="";
+      this.isFax =false;
+    }
+
+    if(selectedChannel!== "undefined")
+    {
+      this.channel =selectedChannel;
+      this.selectedChannel =selectedChannel;
+    }
+
+    if(selectedEmailAddress !== "undefined")
+    {
+      this.isEmail = true;
+      //this.email =selectedEmailAddress;
+  	  this.selectedEmailAddress =selectedEmailAddress;
+       var emailAdd =selectedEmailAddress;
+      this.emailForm.emails =[];
+  
+      if(emailAdd.includes(';'))
+      {
+        let str :string[]=emailAdd.split(';');
+        this.email = str[0];
+        for(let i=1;i<str.length;i++)
+        {
+         // console.log("array in loop is",str[i]);
+          this.emailForm.emails.push({
+           id: i, // <--- uniqueness hook.
+           email : str[i]
+              });
+        }
+         
+      }
+      else{
+        this.email =emailAdd;
+      } 
+    }
+    else{
+      this.email ="";
+      this.selectedEmailAddress="";
+      //this.emailForm.emails.splice(0,this.emailForm.emails.length)
+      this.isEmail = false;
+    }
+
+    if(selectedComments !== "undefined")
+    {
+      this.comments =selectedComments;
+      this.selectedComments =selectedComments;
+    }
+    else{
+      this.comments ="";
+      this.selectedComments ="";
+    }
+  }
+
+  updateRecipientDetails()
+  {
+    console.log(this.email);
+    this.emailForm.emails.forEach(function (value) {
+      console.log(value.email);})
+      var emailAdresses = this.email;
+      if(this.emailForm.emails.length > 0)
+      {
+        this.emailForm.emails.forEach(function (emailAdd) {
+          emailAdresses =emailAdresses +";"+emailAdd.email;
+          })
+      }
+    if(this.selectedRecipientId == this.recipientId && this.selectedChannel == this.channel
+       && this.selectedEmailAddress == emailAdresses
+     && this.selectedFaxNumber == this.faxNumber && this.selectedSecondFaxNumber ==this.secondfaxNumber 
+     && this.selectedComments == this.comments)
+     {
+        this.accountService.showWarning("Nothing to Update!!");
+     }
+     else{
+       this.recipientDetailsObj = {recipientId : this.recipientId, 
+      communicationMode :this.channel,emailAddress :emailAdresses,faxNumber :this.faxNumber,
+      secondFaxNumber:this.secondfaxNumber,status :this.activated,createdBy :sessionStorage.getItem("userDetails"),
+      updatedBy :sessionStorage.getItem("userDetails"),comments:this.comments};
+      console.log(this.recipientDetailsObj);
+     
+        this.accountService.
+        createNewCMAccountRegion(
+          "/MOLandingZoneGateway/api/emailFax/updateRecipient", this.recipientDetailsObj)
+          .subscribe(data =>
+          {
+            console.log(data);
+            if (data == 1) {
+              console.log("Updated Successfully");
+             this.accountService.showSuccess('Recipient Details successfully updated');
+             this.accountService.getMonitoringDetails
+             ("/MOLandingZoneGateway/api/emailFax/details")
+               .subscribe(recipientDetails => 
+                { this.recipientDetails = recipientDetails;
+                 console.log(this.recipientDetails)
+                 if(this.recipientDetails ==null)
+                 {
+                   this.accountService.showError('Unable to retrieve the account details');
+                 }
+                });
+                this.selectedRecipientId =this.recipientId;
+                this.selectedChannel = this.channel;
+                this.selectedEmailAddress = emailAdresses;
+                this.selectedFaxNumber = this.faxNumber ;
+                this.selectedSecondFaxNumber =this.secondfaxNumber; 
+                this.selectedComments = this.comments;
+                
+          }
+          if (data == 2) {
+            console.log("Created Successfully");
+            this.accountService.showSuccess('Recipient created Successfully');
+            this.accountService.getMonitoringDetails
+            ("/MOLandingZoneGateway/api/emailFax/details")
+              .subscribe(recipientDetails => 
+               { this.recipientDetails = recipientDetails;
+                console.log(this.recipientDetails)
+                if(this.recipientDetails ==null)
+                {
+                  this.accountService.showError('Unable to retrieve the account details');
+                }
+               });
+               this.selectedRecipientId =this.recipientId;
+               this.selectedChannel = this.channel;
+               this.selectedEmailAddress = emailAdresses;
+               this.selectedFaxNumber = this.faxNumber ;
+               this.selectedSecondFaxNumber =this.secondfaxNumber; 
+               this.selectedComments = this.comments;
+             
+        }
+          else if(data == -1)
+          {
+            this.accountService.showError('Unexpected Error occurred!!');
+          }
+          });
+        }
+   
+  }
+
+  onGridReady(params) {
+    this.gridApi = params.api;
+    this.gridColumnApi = params.columnApi;
+    this.gridApi.sizeColumnsToFit()
+  }
+
+  onFilterTextBoxChanged() 
+  {
+   var accountNumberComponent = this.gridApi.getFilterInstance("recipientId");
+   accountNumberComponent.setModel({
+     type: "startsWith",
+     filter: this.searchText
+   });
+   this.gridApi.onFilterChanged();
+  }
+
+  ngOnDestroy(): void
+  {
+    this.reloadEmailFaxGrid.unsubscribe();
+  }
+
+}
+
+********************************************************************************
+routing-module.module.ts
+********************************************************************************
+
+import { CommonModule } from '@angular/common';
+import { NgModule } from '@angular/core';
+import { RouterModule, Routes } from '@angular/router';
+const appRoute: Routes = [
+ 
+]
+
+
+
+@NgModule({
+  imports: [RouterModule.forRoot(appRoute,{useHash :true}),
+    CommonModule
+  ],
+  declarations: [],
+  exports: [RouterModule]
+})
+export class RoutingModuleModule { }
+
+********************************************************************************
+row-operation.component.html
+********************************************************************************
+<div>
+<!-- <span class="glyphicon glyphicon-ok"></span>
+<span class="glyphicon glyphicon-remove"></span> -->
+<button type="button" class="btn btn-sm btn-success"*ngIf="isValid"
+ style="width:79px;padding:1px 11px;margin-bottom:6px;" (click)="validateCMAccountRegion()">
+ Validate</button>
+<button type="button" class="btn btn-sm btn-danger" *ngIf="isDeactivate" 
+style="padding:1px 11px;margin-bottom:6px;" (click)="deactivateCMAccountRegion()"
+>
+Deactivate</button>
+
+
+</div>
+
+********************************************************************************
+row-operation.component.ts
+********************************************************************************
+
+import { Component, ElementRef, ViewChild } from '@angular/core';
+import { INoRowsOverlayAngularComp } from 'ag-grid-angular';
+import { AccountTableService } from '../shared/account-table.service';
+
+@Component({
+  selector: 'app-row-operation',
+  templateUrl: './row-operation.component.html',
+  styleUrls: ['./row-operation.component.css']
+})
+
+export class RowOperationComponent implements  INoRowsOverlayAngularComp  {
+ 
+ 
+  @ViewChild('comments') searchElement: ElementRef;
+  
+  private userName: String = sessionStorage.getItem("userDetails");
+  isValid:boolean =false;
+  isDeactivate:boolean =false;
+  private selectedRowObject:any;
+  private accounts: any;
+  private parameters:any;
+  
+
+  constructor(private accountTableService: AccountTableService,
+    private el: ElementRef) { 
+  }
+    agInit(params){
+      this.parameters =params.data;
+        if(params.data.createdBy != this.userName && (params.data.status=="CREATED" || params.data.status=="DEACTIVATED"))
+        {
+          this.isValid=true;
+        }
+        if(params.data.createdBy != this.userName && params.data.status=="VALIDATED")
+        {
+          this.isDeactivate=true;
+        }
+    }
+  
+
+validateCMAccountRegion() {
+  console.log("Validate Account method called");
+  
+
+  this.selectedRowObject ={
+    accountNumber:this.parameters.accountNumber,
+    region:this.parameters.region,
+    status:this.parameters.status,
+    createdBy :this.parameters.createdBy,
+    creationDate:this.parameters.creationDate,
+    validatedBy:sessionStorage.getItem("userDetails"),
+    comments:this.parameters.comments,
+    type:'validate'
+  }
+  this.accountTableService.loadModal.next(this.selectedRowObject);
+  console.log("validate Object:", this.selectedRowObject);
+  
+}
+
+deactivateCMAccountRegion()
+{
+  console.log("Deactivate Account method called");
+  this.selectedRowObject ={
+    accountNumber:this.parameters.accountNumber,
+    region:this.parameters.region,
+    status:this.parameters.status,
+    createdBy :this.parameters.createdBy,
+    creationDate:this.parameters.creationDate,
+    validatedBy:sessionStorage.getItem("userDetails"),
+    comments:this.parameters.comments,
+    type:'deactivate'
+  }
+  this.accountTableService.loadModal.next(this.selectedRowObject);
+  console.log("deactivate Object:", this.selectedRowObject);
+  
+}
+ 
+}
+
+
+
+
 
 
 
